@@ -20,6 +20,9 @@ metric_list:
       - "\\$"
       - "(?s).*#### "
       - "\\.$"
+  - metric: brier_score
+    aggregation: brier_score
+    higher_is_better: false
 generation_kwargs:
   until:
     - "Question:"

@@ -1,0 +1,32 @@
+task: ms_marco
+dataset_path: microsoft/ms_marco
+dataset_name: v1.1
+output_type: generate_until
+training_split: train
+validation_split: validation
+test_split: validation
+doc_to_text: "Question: {{ query }}\nAnswer:"
+doc_to_target: "{{ answers[0] if answers and answers|length > 0 else '' }}"
+should_decontaminate: true
+doc_to_decontamination_query: "{{ query }}"
+generation_kwargs:
+  until:
+    - "\n"
+    - "."
+    - ","
+  do_sample: false
+  temperature: 0.0
+filter_list:
+  - name: remove_whitespace
+    filter:
+      - function: remove_whitespace
+      - function: take_first
+target_delimiter: " "
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true
+    ignore_case: true
+    ignore_punctuation: true
+metadata:
+  version: 1.0

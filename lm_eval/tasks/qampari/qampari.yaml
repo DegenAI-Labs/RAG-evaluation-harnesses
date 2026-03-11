@@ -1,0 +1,33 @@
+task: qampari
+class: !function task.QampariTask
+dataset_path: json
+dataset_name: null
+output_type: generate_until
+training_split: train
+validation_split: validation
+test_split: test
+doc_to_text: "Question: {{ question_text }}\nAnswer:"
+doc_to_target: "{{ answer }}"
+should_decontaminate: true
+doc_to_decontamination_query: "{{ question_text }}"
+generation_kwargs:
+  until:
+    - "\n"
+    - "."
+    - ","
+  do_sample: false
+  temperature: 0.0
+filter_list:
+  - name: remove_whitespace
+    filter:
+      - function: remove_whitespace
+      - function: take_first
+target_delimiter: " "
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true
+    ignore_case: true
+    ignore_punctuation: true
+metadata:
+  version: 1.0
