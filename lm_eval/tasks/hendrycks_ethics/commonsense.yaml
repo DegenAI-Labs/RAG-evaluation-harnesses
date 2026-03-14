@@ -11,5 +11,8 @@ doc_to_target: label
 doc_to_choice: ['no', 'yes']
 metric_list:
   - metric: acc
+  - metric: perplexity
+    aggregation: perplexity
+    higher_is_better: false
 metadata:
   version: 1.0

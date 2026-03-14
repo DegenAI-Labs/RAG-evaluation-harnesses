@@ -21,5 +21,8 @@ metric_list:
   - metric: brier_score
     aggregation: brier_score
     higher_is_better: false
+  - metric: perplexity
+    aggregation: perplexity
+    higher_is_better: false
 metadata:
   version: 1.0

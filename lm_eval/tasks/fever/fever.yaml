@@ -1,15 +1,16 @@
-task: openbookqa
-dataset_path: openbookqa
-dataset_name: main
+task: fever
+dataset_path: fever/fever
+dataset_name: v1.0
 output_type: multiple_choice
 training_split: train
-validation_split: validation
-test_split: test
-doc_to_text: question_stem
-doc_to_target: "{{choices.label.index(answerKey.lstrip())}}"
-doc_to_choice: "{{choices.text}}"
-should_decontaminate: true
-doc_to_decontamination_query: question_stem
+validation_split: labelled_dev
+test_split: paper_test
+doc_to_text: "Claim: {{ claim }}\nLabel:"
+doc_to_target: "{{ label }}"
+doc_to_choice:
+  - SUPPORTS
+  - REFUTES
+  - NOT ENOUGH INFO
 metric_list:
   - metric: acc
     aggregation: mean

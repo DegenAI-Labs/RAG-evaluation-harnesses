@@ -1425,6 +1425,17 @@ class ConfigurableTask(Task):
                     if "brier_score" in use_metric
                     else {}
                 ),
+                **(
+                    {
+                        "perplexity": (
+                            lls[gold] / completion_len[gold]
+                            if not self.multiple_target
+                            else np.mean([lls[g] / completion_len[g] for g in gold])
+                        )
+                    }
+                    if ("perplexity" in use_metric and not gold_index_error)
+                    else {}
+                ),
             }
 
             if "acc_mutual_info" in use_metric:

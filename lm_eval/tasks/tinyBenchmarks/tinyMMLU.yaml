@@ -15,5 +15,8 @@ metric_list:
   - metric: acc_norm
     aggregation: !function agg_functions.agg_gpirt_mmlu
     higher_is_better: true
+  - metric: perplexity
+    aggregation: perplexity
+    higher_is_better: false
 metadata:
   version: 0.0
