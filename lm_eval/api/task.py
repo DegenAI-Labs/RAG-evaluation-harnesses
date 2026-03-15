@@ -1354,11 +1354,21 @@ class ConfigurableTask(Task):
                 ),
             }
         elif self.OUTPUT_TYPE == "multiple_choice":
-            lls, is_greedy = zip(*results)
+            # Support both (logprob, is_greedy) and (logprob, is_greedy, cont_tok_len)
+            first = results[0]
+            if len(first) == 3:
+                lls, is_greedy, cont_lens = zip(*results)
+                cont_lens = np.array(cont_lens, dtype=float)
+            else:
+                lls, is_greedy = zip(*results)
+                cont_lens = None
 
             # retrieve choices in List[str] form, to compute choice lengths, etc.
             choices = self.doc_to_choice(doc)
-            completion_len = np.array([float(len(i)) for i in choices])
+            if cont_lens is not None:
+                completion_len = cont_lens  # per-token length for proper perplexity
+            else:
+                completion_len = np.array([float(len(i)) for i in choices])
 
             if (
                 2 * len(choices) == len(lls)
@@ -1371,6 +1381,8 @@ class ConfigurableTask(Task):
                     raise ValueError
                 # and this stores our "regular" conditional loglikelihoods
                 lls = lls[::2]
+                if cont_lens is not None:
+                    completion_len = completion_len[::2]
 
             pred = np.argmax(lls)
             pred_norm = np.argmax(lls / completion_len)
