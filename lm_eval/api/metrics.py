@@ -189,7 +189,7 @@ def exact_match_fn(**kwargs):
 @register_metric(
     metric="perplexity",
     higher_is_better=False,
-    output_type="loglikelihood",
+    output_type=["loglikelihood", "generate_until"],
     aggregation="perplexity",
 )
 def perplexity_fn(items):  # This is a passthrough function

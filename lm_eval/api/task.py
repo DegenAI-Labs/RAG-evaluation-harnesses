@@ -1260,6 +1260,23 @@ class ConfigurableTask(Task):
         else:
             raise TypeError
 
+    def _generate_until_perplexity_continuation(self, doc: dict) -> str:
+        """Continuation (including target_delimiter) used for gold answer log-prob."""
+        gold = self.doc_to_target(doc)
+        if self.config.doc_to_choice is not None:
+            choices = self.doc_to_choice(doc)
+            if isinstance(gold, int):
+                s = choices[gold]
+            elif isinstance(gold, str) and gold in choices:
+                s = gold
+            else:
+                s = str(gold)
+        elif isinstance(gold, list):
+            s = str(gold[0]) if gold else ""
+        else:
+            s = str(gold)
+        return f"{self.config.target_delimiter}{s}"
+
     def construct_requests(
         self, doc: dict, ctx: str, **kwargs
     ) -> Union[List[Instance], Instance]:
@@ -1313,6 +1330,26 @@ class ConfigurableTask(Task):
             return request_list
 
         elif self.OUTPUT_TYPE == "generate_until":
+            if "perplexity" in self._metric_fn_list.keys():
+                return [
+                    Instance(
+                        request_type="generate_until",
+                        doc=doc,
+                        arguments=(ctx, deepcopy(self.config.generation_kwargs)),
+                        idx=0,
+                        **kwargs,
+                    ),
+                    Instance(
+                        request_type="loglikelihood",
+                        doc=doc,
+                        arguments=(
+                            ctx,
+                            self._generate_until_perplexity_continuation(doc),
+                        ),
+                        idx=1,
+                        **kwargs,
+                    ),
+                ]
             arguments = (ctx, deepcopy(self.config.generation_kwargs))
 
         return Instance(
@@ -1473,6 +1510,8 @@ class ConfigurableTask(Task):
                 gold = type(result)(gold)
 
             for metric in self._metric_fn_list.keys():
+                if metric == "perplexity":
+                    continue
                 if self.multiple_target:
                     # in the case where we have multiple targets,
                     # return true if any are true
@@ -1525,6 +1564,27 @@ class ConfigurableTask(Task):
                         # TODO: this handles the case where HF evaluate returns a dict.
                         result_score = result_score[metric]
                 result_dict[metric] = result_score
+
+            if "perplexity" in use_metric:
+                if len(results) < 2:
+                    eval_logger.warning(
+                        f"[Task: {self.config.task}] `perplexity` is in metric_list but "
+                        "expected a paired loglikelihood request; skipping perplexity for this doc."
+                    )
+                else:
+                    ll_payload = results[1]
+                    if isinstance(ll_payload, list):
+                        ll_payload = ll_payload[0] if ll_payload else None
+                    if isinstance(ll_payload, tuple) and len(ll_payload) >= 1:
+                        ll = float(ll_payload[0])
+                        cont = self._generate_until_perplexity_continuation(doc)
+                        denom = max(len(cont), 1)
+                        result_dict["perplexity"] = ll / denom
+                    else:
+                        eval_logger.warning(
+                            f"[Task: {self.config.task}] Unexpected loglikelihood output "
+                            f"for perplexity: {ll_payload!r}; skipping."
+                        )
         else:
             raise ValueError(
                 f"Passed invalid output_type '{self.OUTPUT_TYPE}' ! Please use one of ",

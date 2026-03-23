@@ -23,6 +23,9 @@ metric_list:
   - metric: brier_score
     aggregation: brier_score
     higher_is_better: false
+  - metric: perplexity
+    aggregation: perplexity
+    higher_is_better: false
 generation_kwargs:
   until:
     - "Question:"

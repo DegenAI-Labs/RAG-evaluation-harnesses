@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import datasets
 
@@ -15,21 +15,34 @@ def process_docs(dataset: datasets.Dataset) -> datasets.Dataset:
     return dataset.map(_process_doc)
 
 
-def process_results(doc: dict, results: List[str]) -> Dict[str, int]:
+def process_results(doc: dict, results: List[Union[str, list, tuple]]) -> Dict[str, float]:
+    gen = results[0]
+    if isinstance(gen, list):
+        gen = gen[0] if gen else ""
+
     retval = 0
-    indices = [pos for pos, char in enumerate(results[0]) if char == "$"]
+    indices = [pos for pos, char in enumerate(gen) if char == "$"]
     if len(indices) <= 1:
-        answer = results[0]
+        answer = gen
     else:
-        answer = results[0][indices[0] + 1 : indices[-1]]
+        answer = gen[indices[0] + 1 : indices[-1]]
 
     if is_equiv(answer, remove_boxed(last_boxed_only_string(doc["solution"]))):
         retval = 1
 
-    results = {
-        "exact_match": retval,
-    }
-    return results
+    out: Dict[str, float] = {"exact_match": float(retval)}
+
+    if len(results) >= 2:
+        ll_payload = results[1]
+        if isinstance(ll_payload, list):
+            ll_payload = ll_payload[0] if ll_payload else None
+        if isinstance(ll_payload, tuple) and len(ll_payload) >= 1:
+            ll = float(ll_payload[0])
+            cont = " " + str(doc["answer"])
+            denom = max(len(cont), 1)
+            out["perplexity"] = ll / denom
+
+    return out
 
 
 # string normalization from https://github.com/EleutherAI/lm-evaluation-harness/blob/master/lm_eval/tasks/hendrycks_math.py

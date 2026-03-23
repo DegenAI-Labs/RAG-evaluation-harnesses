@@ -1,20 +1,21 @@
-task: hotpotqa
-dataset_path: hotpotqa/hotpot_qa
-dataset_name: distractor
+# Generate-until variant of PIQA for pipelines that only run `generate_until` tasks.
+# Standard multiple-choice PIQA remains `piqa` (task name: piqa).
+task: piqa_generative
+# Parquet-backed mirror (canonical `piqa` uses a deprecated loading script on newer `datasets`).
+dataset_path: lighteval/piqa
+dataset_name: plain_text
 output_type: generate_until
 training_split: train
 validation_split: validation
-# Distractor config has no public test set; evaluate on validation
-test_split: validation
-doc_to_text: "Question: {{question}}\nAnswer:"
-doc_to_target: "{{answer}}"
+test_split: null
+doc_to_text: "Question: {{goal}}\nChoose the more plausible ending:\n(A) {{sol1}}\n(B) {{sol2}}\nAnswer:"
+doc_to_target: "{% if label == 0 %}A{% else %}B{% endif %}"
 should_decontaminate: true
-doc_to_decontamination_query: "{{question}}"
+doc_to_decontamination_query: "{{goal}}"
 generation_kwargs:
   until:
     - "\n"
     - "."
-    - ","
   do_sample: false
   temperature: 0.0
 filter_list:

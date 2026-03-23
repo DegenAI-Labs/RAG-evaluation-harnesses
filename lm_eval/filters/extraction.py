@@ -33,6 +33,9 @@ class RegexFilter(Filter):
         def filter_set(inst):
             filtered = []
             for resp in inst:
+                if not isinstance(resp, str):
+                    filtered.append(resp)
+                    continue
                 match = self.regex.findall(resp)
                 if match:
                     match = match[self.group_select]
@@ -62,7 +65,7 @@ class WhitespaceFilter(Filter):
         def filter_set(inst):
             filtered_resp = []
             for resp in inst:
-                if resp.startswith(" "):
+                if isinstance(resp, str) and resp.startswith(" "):
                     resp = resp[1:]
 
                 filtered_resp.append(resp)
